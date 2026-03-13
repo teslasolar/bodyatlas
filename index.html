@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.S.S.-OS Anatomical Atlas</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0f; color: #e0e0e0; font-family: 'Courier New', monospace; }
+
+#app { display: grid; grid-template-columns: 260px 1fr 320px; grid-template-rows: 1fr 80px; width: 100%; height: 100%; }
+
+/* Left Panel - Layer Toggles */
+#left-panel {
+  grid-column: 1; grid-row: 1 / 3;
+  background: rgba(10,10,20,0.95);
+  border-right: 1px solid #222;
+  overflow-y: auto; padding: 12px;
+  z-index: 10;
+}
+#left-panel h2 { font-size: 13px; color: #888; letter-spacing: 2px; margin-bottom: 12px; text-transform: uppercase; }
+.layer-control { margin-bottom: 10px; padding: 10px; border: 1px solid #1a1a2e; border-radius: 6px; transition: all 0.3s; }
+.layer-control:hover { border-color: #333; background: rgba(255,255,255,0.02); }
+.layer-control.active { border-color: var(--layer-color); background: rgba(255,255,255,0.03); }
+.layer-header { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.layer-header input[type="checkbox"] { accent-color: var(--layer-color); width: 16px; height: 16px; cursor: pointer; }
+.layer-header .ring-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--layer-color); color: #000; font-weight: bold; }
+.layer-header .layer-name { font-size: 12px; font-weight: bold; }
+.layer-slider { margin-top: 6px; width: 100%; display: none; }
+.layer-control.active .layer-slider { display: block; }
+.layer-slider input[type="range"] { width: 100%; height: 4px; accent-color: var(--layer-color); }
+.layer-slider label { font-size: 10px; color: #666; }
+
+/* Presets */
+#presets { margin-top: 16px; border-top: 1px solid #1a1a2e; padding-top: 12px; }
+#presets h3 { font-size: 11px; color: #666; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+.preset-btn {
+  display: block; width: 100%; padding: 7px 10px; margin-bottom: 4px;
+  background: rgba(255,255,255,0.03); border: 1px solid #1a1a2e; border-radius: 4px;
+  color: #aaa; font-size: 11px; font-family: 'Courier New', monospace;
+  cursor: pointer; text-align: left; transition: all 0.2s;
+}
+.preset-btn:hover { background: rgba(255,255,255,0.07); border-color: #444; color: #fff; }
+.preset-btn.active { border-color: #ffd700; color: #ffd700; }
+
+/* Canvas area */
+#canvas-container { grid-column: 2; grid-row: 1; position: relative; }
+#canvas-container canvas { width: 100% !important; height: 100% !important; }
+
+/* Title overlay */
+#title-overlay {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  text-align: center; pointer-events: none; z-index: 5;
+}
+#title-overlay h1 { font-size: 16px; color: #ffd700; letter-spacing: 3px; text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+#title-overlay .subtitle { font-size: 10px; color: #555; margin-top: 2px; letter-spacing: 1px; }
+
+/* Camera presets */
+#camera-controls {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; z-index: 5;
+}
+.cam-btn {
+  padding: 4px 10px; background: rgba(10,10,20,0.8); border: 1px solid #222;
+  border-radius: 3px; color: #888; font-size: 10px; font-family: 'Courier New', monospace;
+  cursor: pointer; transition: all 0.2s;
+}
+.cam-btn:hover { border-color: #555; color: #fff; }
+
+/* Right Panel - Info */
+#right-panel {
+  grid-column: 3; grid-row: 1 / 3;
+  background: rgba(10,10,20,0.95);
+  border-left: 1px solid #222;
+  overflow-y: auto; padding: 16px;
+  z-index: 10;
+}
+#right-panel h2 { font-size: 13px; color: #888; letter-spacing: 2px; margin-bottom: 12px; text-transform: uppercase; }
+#info-content { font-size: 12px; line-height: 1.6; }
+#info-content .info-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+#info-content .info-ring { font-size: 12px; padding: 3px 8px; border-radius: 3px; display: inline-block; margin-bottom: 10px; font-weight: bold; }
+#info-content .info-section { margin-bottom: 14px; }
+#info-content .info-section h4 { font-size: 11px; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+#info-content .info-section p { color: #bbb; font-size: 11px; line-height: 1.7; }
+#info-content .info-anatomy { color: #6af; }
+#info-content .info-k { color: #4c6; }
+
+/* Bottom bar - Cross section */
+#bottom-bar {
+  grid-column: 2; grid-row: 2;
+  background: rgba(10,10,20,0.95);
+  border-top: 1px solid #222;
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  z-index: 10;
+}
+#bottom-bar label { font-size: 11px; color: #666; white-space: nowrap; letter-spacing: 1px; text-transform: uppercase; }
+#cross-section-slider { flex: 1; height: 4px; accent-color: #ffd700; }
+#cross-section-value { font-size: 11px; color: #ffd700; min-width: 40px; }
+
+/* Drug overlay panel */
+#drug-panel {
+  display: none; position: absolute; top: 50px; left: 10px;
+  background: rgba(10,10,20,0.95); border: 1px solid #333; border-radius: 6px;
+  padding: 12px; z-index: 20; min-width: 220px;
+}
+#drug-panel.visible { display: block; }
+#drug-panel h3 { font-size: 11px; color: #ffd700; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+.drug-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer; }
+.drug-toggle input { accent-color: var(--drug-color); }
+.drug-toggle label { font-size: 11px; cursor: pointer; }
+.drug-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+/* Loading screen */
+#loading {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #0a0a0f; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 100;
+  transition: opacity 0.5s;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+#loading h1 { font-size: 20px; color: #ffd700; letter-spacing: 4px; margin-bottom: 8px; }
+#loading p { font-size: 12px; color: #555; }
+#loading .bar { width: 200px; height: 2px; background: #111; margin-top: 20px; border-radius: 1px; overflow: hidden; }
+#loading .bar-fill { width: 0%; height: 100%; background: #ffd700; transition: width 0.3s; }
+
+/* Mobile */
+@media (max-width: 900px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  #left-panel, #right-panel, #bottom-bar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>A.S.S.-OS</h1>
+  <p>ANATOMICAL ATLAS</p>
+  <p style="margin-top:4px; font-size:10px; color:#333;">the body IS Ring 0</p>
+  <div class="bar"><div class="bar-fill" id="load-bar"></div></div>
+</div>
+
+<div id="app">
+  <!-- Left Panel -->
+  <div id="left-panel">
+    <h2>System Layers</h2>
+    <div id="layer-toggles"></div>
+    <div id="presets">
+      <h3>Presets</h3>
+      <div id="preset-buttons"></div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div id="canvas-container">
+    <div id="title-overlay">
+      <h1>A.S.S.-OS ANATOMICAL ATLAS</h1>
+      <div class="subtitle">the body IS Ring 0 &middot; 510,510</div>
+    </div>
+    <div id="drug-panel">
+      <h3>Drug Overlay</h3>
+      <div id="drug-toggles"></div>
+    </div>
+    <div id="camera-controls">
+      <button class="cam-btn" data-view="front">Front</button>
+      <button class="cam-btn" data-view="back">Back</button>
+      <button class="cam-btn" data-view="left">Left</button>
+      <button class="cam-btn" data-view="right">Right</button>
+      <button class="cam-btn" data-view="top">Top</button>
+      <button class="cam-btn" data-view="bottom">Bottom</button>
+      <button class="cam-btn" data-view="inside">Inside</button>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div id="right-panel">
+    <h2>Ring Info</h2>
+    <div id="info-content">
+      <div class="info-section">
+        <p style="color:#555;">Click any structure or toggle a layer to see A.S.S.-OS ring mapping, K+ channel data, and anatomical information.</p>
+        <br>
+        <p style="color:#333; font-size:10px;">"The body IS Ring 0. Now you can see it."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div id="bottom-bar">
+    <label>Cross Section</label>
+    <input type="range" id="cross-section-slider" min="0" max="100" value="100">
+    <span id="cross-section-value">OFF</span>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
