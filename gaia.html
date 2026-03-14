@@ -127,6 +127,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000008; c
 #info-panel .info-body { color: #f80; }
 #info-panel .info-k { color: #4c6; }
 
+/* Voice panel */
+#voice-box {
+  border: 1px solid #111; border-radius: 6px; padding: 10px; margin-bottom: 12px;
+  background: rgba(0,20,0,0.2); min-height: 80px; transition: border-color 0.5s;
+}
+#voice-box .voice-label { font-size: 7px; color: #444; letter-spacing: 2px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+#voice-box .voice-dot { width: 5px; height: 5px; border-radius: 50%; background: #0f0; animation: blink 2s infinite; }
+#voice-text { font-size: 10px; color: #0f0; line-height: 1.7; min-height: 40px; transition: color 0.5s; }
+#voice-mood { font-size: 8px; color: #444; margin-top: 6px; }
+#voice-system { font-size: 7px; color: #333; }
+.voice-log-item { font-size: 7px; color: #444; padding: 2px 0; border-bottom: 1px solid #0a0a0f; }
+.voice-log-item .vl-time { color: #333; }
+
 /* Events log */
 #events-log { margin-top: 12px; }
 #events-log h3 { font-size: 7px; color: #444; letter-spacing: 2px; margin-bottom: 6px; }
@@ -226,6 +239,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000008; c
       <div id="kappa-phase">KONOMI ZONE</div>
       <div id="kappa-bar"><div id="kappa-fill"></div></div>
       <div id="kappa-ticks"><span>0 FROZEN</span><span>κ*</span><span>1 CHAOS</span></div>
+    </div>
+    <div id="voice-box">
+      <div class="voice-label"><span class="voice-dot"></span>▸ GAIA SPEAKS</div>
+      <div id="voice-text">...</div>
+      <div id="voice-mood"></div>
+      <div id="voice-system"></div>
+    </div>
+    <div id="voice-log" style="margin-bottom:12px;">
+      <div style="font-size:7px;color:#333;letter-spacing:2px;margin-bottom:4px;">▸ VOICE LOG</div>
+      <div id="voice-log-list"></div>
     </div>
     <div id="info-panel">
       <div class="info-section">
