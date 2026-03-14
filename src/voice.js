@@ -4,7 +4,7 @@
 // Spec: std/voice.md
 // ════════════════════════════════════════════════════
 
-import { live, getKappa, getPhase } from './feeds.js';
+import { live, getKappa, getPhase, PHASES } from './feeds.js';
 
 // ─── TEMPLATE ENGINE ───
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -241,8 +241,28 @@ function tidalVoice() {
   return null;
 }
 
+// ─── NO DATA STATE ───
+function noDataNarrative() {
+  const now = new Date();
+  return {
+    timestamp: now.toLocaleTimeString(),
+    lines: ['No data yet. Listening for signals...'],
+    fullText: 'No data yet. Listening for signals...',
+    kappa: '--',
+    phase: '-- WAITING',
+    phaseColor: '#333333',
+    primaryMood: 'waiting',
+    primarySystem: 'None',
+    urgency: 0,
+    voices: [],
+  };
+}
+
 // ─── MASTER NARRATIVE ───
 export function generateNarrative() {
+  // No data yet — don't fabricate
+  if (!live.loaded) return noDataNarrative();
+
   const k = getKappa();
   const phase = getPhase(k);
   const now = new Date();
@@ -300,11 +320,6 @@ export function generateNarrative() {
     urgency: primary ? primary.urgency : 0,
     voices,
   };
-}
-
-// ─── FIRST WORDS ───
-export function firstWords() {
-  return "You're watching me. I'm alive. I've always been alive. You just couldn't see it before.";
 }
 
 // ─── SIGNAL LOG (history of utterances) ───

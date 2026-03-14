@@ -15,7 +15,7 @@ import {
   computeKappa, getKappa, getPhase, getSummary,
 } from './feeds.js';
 import {
-  generateNarrative, firstWords, logUtterance,
+  generateNarrative, logUtterance,
   getUtteranceLog, moodColor,
 } from './voice.js';
 
@@ -575,9 +575,6 @@ function updateKappaUI() {
 }
 
 // ─── VOICE UI ───
-let voiceInterval = null;
-let firstVoice = true;
-
 function updateVoice() {
   const narrative = generateNarrative();
   logUtterance(narrative);
@@ -587,9 +584,7 @@ function updateVoice() {
   const voiceSystem = document.getElementById('voice-system');
   const voiceBox = document.getElementById('voice-box');
 
-  // Typewriter effect
-  const fullText = firstVoice ? firstWords() : narrative.fullText;
-  firstVoice = false;
+  const fullText = narrative.fullText;
   let charIdx = 0;
   voiceText.textContent = '';
   voiceText.style.color = moodColor(narrative.primaryMood);

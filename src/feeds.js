@@ -12,28 +12,28 @@ export const live = {
   significantQuakes: [],
 
   // Solar
-  solarSpeed: 400,
-  solarDensity: 5,
-  solarTemp: 1e5,
+  solarSpeed: 0,
+  solarDensity: 0,
+  solarTemp: 0,
   solarBz: 0,
   solarBt: 0,
   xrayFlux: 0,
   flares: [],
 
   // Geomagnetic
-  kpIndex: 2,
+  kpIndex: 0,
   goesMagHp: 0,
   goesMagHe: 0,
   auroraMax: 0,
 
   // Resonance
-  schumann: 7.83,
-  lightningRate: 1800,
+  schumann: 0,
+  lightningRate: 0,
 
   // Weather
-  globalTemp: 20,
-  globalWind: 10,
-  globalPressure: 1013,
+  globalTemp: 0,
+  globalWind: 0,
+  globalPressure: 0,
 
   // Ocean
   tideLevel: 0,
@@ -42,7 +42,8 @@ export const live = {
   spaceWeatherAlerts: [],
 
   // Meta
-  lastUpdate: Date.now(),
+  loaded: false,        // true after first successful refresh
+  lastUpdate: 0,
   errors: [],
 };
 
@@ -343,6 +344,7 @@ export async function refreshAll() {
   // Computed
   updateSchumann();
   updateLightning();
+  live.loaded = true;
   live.lastUpdate = Date.now();
 }
 
