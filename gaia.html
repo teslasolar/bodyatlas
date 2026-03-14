@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAIA BODY — Planetary Anatomy Live</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Orbitron:wght@400;700&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000008; color: #e0e0e0; font-family: 'JetBrains Mono', monospace; }
+
+#app { display: grid; grid-template-columns: 240px 1fr 260px; grid-template-rows: 1fr 70px; width: 100%; height: 100%; }
+
+/* Left Panel */
+#left-panel {
+  grid-column: 1; grid-row: 1 / 3;
+  background: rgba(0,0,8,0.95); border-right: 1px solid #111;
+  overflow-y: auto; padding: 12px; z-index: 10;
+}
+#left-panel h2 {
+  font-family: 'Orbitron', sans-serif; font-size: 11px; color: #0f0;
+  letter-spacing: 2px; margin-bottom: 4px;
+  text-shadow: 0 0 10px rgba(0,255,0,0.3);
+}
+#left-panel .subtitle { font-size: 7px; color: #333; letter-spacing: 1px; margin-bottom: 14px; }
+.section-title { font-size: 7px; color: #444; letter-spacing: 2px; text-transform: uppercase; margin: 12px 0 6px; }
+
+/* Layer mapping cards */
+.gaia-layer {
+  margin-bottom: 6px; padding: 8px; border: 1px solid #111; border-radius: 4px;
+  cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.gaia-layer:hover { border-color: #222; background: rgba(255,255,255,0.02); }
+.gaia-layer.active { border-color: var(--lc); background: rgba(255,255,255,0.03); }
+.gaia-layer .layer-top { display: flex; align-items: center; gap: 6px; }
+.gaia-layer input[type="checkbox"] { accent-color: var(--lc); width: 14px; height: 14px; cursor: pointer; }
+.gaia-layer .ring-badge { font-size: 8px; padding: 1px 5px; border-radius: 2px; background: var(--lc); color: #000; font-weight: 600; font-family: 'Orbitron'; }
+.gaia-layer .layer-label { font-size: 10px; font-weight: 600; }
+.gaia-layer .planet-map { font-size: 8px; color: #555; margin-top: 3px; }
+.gaia-layer .planet-map em { color: var(--lc); font-style: normal; }
+.gaia-layer .live-val { font-size: 11px; color: var(--lc); margin-top: 4px; font-weight: 600; }
+.gaia-layer .slider-row { margin-top: 4px; display: none; }
+.gaia-layer.active .slider-row { display: block; }
+.gaia-layer .slider-row input[type="range"] { width: 100%; height: 3px; accent-color: var(--lc); }
+.gaia-layer .slider-row label { font-size: 7px; color: #444; }
+.gaia-layer .pulse-bar {
+  position: absolute; bottom: 0; left: 0; height: 2px;
+  background: var(--lc); opacity: 0.5; transition: width 0.5s;
+}
+
+/* Feeds */
+.feed-card {
+  padding: 6px 8px; margin-bottom: 4px; border: 1px solid #111; border-radius: 3px;
+  display: flex; align-items: center; gap: 6px;
+}
+.feed-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; flex-shrink: 0; }
+.feed-dot.live { background: #0f0; box-shadow: 0 0 4px #0f0; }
+.feed-dot.error { background: #f00; }
+.feed-name { font-size: 7px; color: #555; flex: 1; }
+.feed-val { font-size: 9px; color: #aaa; }
+
+/* Canvas */
+#canvas-container { grid-column: 2; grid-row: 1; position: relative; }
+#canvas-container canvas { width: 100% !important; height: 100% !important; }
+
+/* Title overlay */
+#title-bar {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  text-align: center; pointer-events: none; z-index: 5;
+}
+#title-bar h1 {
+  font-family: 'Orbitron', sans-serif; font-size: 14px; color: #0f0;
+  letter-spacing: 3px; text-shadow: 0 0 15px rgba(0,255,0,0.3);
+}
+#title-bar .live-dot { display: inline-block; width: 6px; height: 6px; background: #0f0; border-radius: 50%; margin-right: 6px; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+#title-bar .sub { font-size: 7px; color: #333; margin-top: 2px; letter-spacing: 1px; }
+
+/* Alert banner */
+#alert-banner {
+  position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; text-align: center; opacity: 0; transition: opacity 0.5s;
+  pointer-events: none; z-index: 5; text-shadow: 0 0 15px currentColor;
+  font-family: 'Orbitron'; letter-spacing: 1px;
+}
+
+/* Mode toggle */
+#mode-toggle {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 4px; z-index: 5;
+}
+.mode-btn {
+  padding: 4px 10px; background: rgba(0,0,8,0.8); border: 1px solid #222;
+  border-radius: 3px; color: #555; font-size: 8px; font-family: 'JetBrains Mono';
+  cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+}
+.mode-btn:hover { border-color: #444; color: #aaa; }
+.mode-btn.active { border-color: #0f0; color: #0f0; }
+
+/* Right Panel */
+#right-panel {
+  grid-column: 3; grid-row: 1 / 3;
+  background: rgba(0,0,8,0.95); border-left: 1px solid #111;
+  overflow-y: auto; padding: 12px; z-index: 10;
+}
+
+/* Kappa display */
+#kappa-box {
+  text-align: center; padding: 12px; border: 1px solid #111; border-radius: 6px;
+  margin-bottom: 12px;
+}
+#kappa-box .label { font-size: 7px; color: #444; letter-spacing: 2px; }
+#kappa-val { font-size: 28px; font-weight: 300; font-family: 'JetBrains Mono'; }
+#kappa-phase { font-size: 10px; color: #888; margin-top: 2px; }
+#kappa-bar { height: 4px; background: #111; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+#kappa-fill { height: 100%; transition: width 0.5s, background 0.5s; }
+#kappa-ticks { display: flex; justify-content: space-between; font-size: 6px; color: #333; margin-top: 2px; }
+
+/* Info panel */
+#info-panel { margin-top: 12px; }
+#info-panel .info-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+#info-panel .info-ring { font-size: 9px; padding: 2px 6px; border-radius: 2px; display: inline-block; margin-bottom: 8px; font-weight: 600; }
+#info-panel .info-section { margin-bottom: 10px; }
+#info-panel .info-section h4 { font-size: 8px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+#info-panel .info-section p { font-size: 9px; color: #888; line-height: 1.6; }
+#info-panel .info-gaia { color: #0f0; }
+#info-panel .info-body { color: #f80; }
+#info-panel .info-k { color: #4c6; }
+
+/* Events log */
+#events-log { margin-top: 12px; }
+#events-log h3 { font-size: 7px; color: #444; letter-spacing: 2px; margin-bottom: 6px; }
+.event-item {
+  font-size: 8px; padding: 4px 6px; margin-bottom: 3px;
+  border-radius: 2px; border-left: 2px solid #333;
+}
+.event-item.earthquake { border-color: #f80; background: rgba(255,136,0,0.05); }
+.event-item.solar { border-color: #ff0; background: rgba(255,255,0,0.05); }
+.event-item.geomag { border-color: #f0f; background: rgba(255,0,255,0.05); }
+.event-item .ev-time { color: #333; font-size: 6px; }
+
+/* Bottom bar */
+#bottom-bar {
+  grid-column: 2; grid-row: 2;
+  background: rgba(0,0,8,0.95); border-top: 1px solid #111;
+  display: flex; align-items: center; padding: 0 16px; gap: 10px; z-index: 10;
+}
+#bottom-bar label { font-size: 8px; color: #444; white-space: nowrap; letter-spacing: 1px; }
+#cross-slider { flex: 1; height: 3px; accent-color: #0f0; }
+#cross-val { font-size: 9px; color: #0f0; min-width: 30px; }
+.nav-link {
+  padding: 4px 10px; background: transparent; border: 1px solid #222;
+  border-radius: 3px; color: #555; font-size: 8px; font-family: 'JetBrains Mono';
+  cursor: pointer; transition: all 0.2s; text-decoration: none; letter-spacing: 1px;
+}
+.nav-link:hover { border-color: #0f0; color: #0f0; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 1px; }
+
+/* Loading */
+#loading {
+  position: fixed; inset: 0; background: #000008;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100; transition: opacity 0.6s;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+#loading h1 { font-family: 'Orbitron'; font-size: 18px; color: #0f0; letter-spacing: 4px; text-shadow: 0 0 20px rgba(0,255,0,0.3); }
+#loading p { font-size: 8px; color: #333; margin-top: 4px; }
+#loading .bar { width: 180px; height: 2px; background: #111; margin-top: 16px; border-radius: 1px; overflow: hidden; }
+#loading .bar-fill { width: 0%; height: 100%; background: #0f0; transition: width 0.3s; }
+
+@media (max-width: 900px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  #left-panel, #right-panel, #bottom-bar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>GAIA BODY</h1>
+  <p>PLANETARY ANATOMY — LIVE</p>
+  <p style="margin-top:4px;font-size:7px;color:#222;">the earth has a body. now you can see it breathe.</p>
+  <div class="bar"><div class="bar-fill" id="load-bar"></div></div>
+</div>
+
+<div id="app">
+  <!-- Left Panel -->
+  <div id="left-panel">
+    <h2>GAIA BODY</h2>
+    <div class="subtitle">PLANETARY ANATOMY — LIVE MAPPED</div>
+
+    <div class="section-title">▸ BODY ↔ PLANET LAYERS</div>
+    <div id="layer-controls"></div>
+
+    <div class="section-title">▸ DATA FEEDS</div>
+    <div id="feed-status"></div>
+
+    <div class="section-title" style="margin-top:14px;">▸ PRESETS</div>
+    <div id="preset-btns"></div>
+  </div>
+
+  <!-- Canvas -->
+  <div id="canvas-container">
+    <div id="title-bar">
+      <h1><span class="live-dot"></span>GAIA BODY</h1>
+      <div class="sub">EARTH MAPPED TO HUMAN ANATOMY &middot; LIVE DATA</div>
+    </div>
+    <div id="alert-banner"></div>
+    <div id="mode-toggle">
+      <button class="mode-btn active" data-mode="body">BODY</button>
+      <button class="mode-btn" data-mode="earth">EARTH</button>
+      <button class="mode-btn" data-mode="split">SPLIT</button>
+      <button class="mode-btn" data-mode="overlay">OVERLAY</button>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div id="right-panel">
+    <div id="kappa-box">
+      <div class="label">▸ PLANETARY κ</div>
+      <div id="kappa-val">0.6180</div>
+      <div id="kappa-phase">KONOMI ZONE</div>
+      <div id="kappa-bar"><div id="kappa-fill"></div></div>
+      <div id="kappa-ticks"><span>0 FROZEN</span><span>κ*</span><span>1 CHAOS</span></div>
+    </div>
+    <div id="info-panel">
+      <div class="info-section">
+        <p style="color:#333;font-size:8px;">The Earth has a body. Skin = magnetosphere. Muscles = tectonic plates. Organs = core processes. Vessels = ocean currents. Nerves = Schumann resonance. Skeleton = mantle. Energy = geomagnetic field.</p>
+        <br>
+        <p style="color:#222;font-size:7px;">Click any layer to see the mapping. Live data drives everything.</p>
+      </div>
+    </div>
+    <div id="events-log">
+      <h3>▸ LIVE EVENTS</h3>
+      <div id="event-list"></div>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div id="bottom-bar">
+    <label>CROSS SECTION</label>
+    <input type="range" id="cross-slider" min="0" max="100" value="100">
+    <span id="cross-val">OFF</span>
+    <span style="flex:1"></span>
+    <a href="index.html" class="nav-link">← ATLAS</a>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="src/gaia.js"></script>
+</body>
+</html>
