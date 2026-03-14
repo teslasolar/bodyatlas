@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════
 
 import { live, getKappa, getPhase, PHASES } from './feeds.js';
+import { analyze, getCoherence, trendLabel, getNorm, getDeriv, getPatterns } from './coherence.js';
 
 // ─── TEMPLATE ENGINE ───
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -258,6 +259,40 @@ function noDataNarrative() {
   };
 }
 
+// ─── TREND ANNOTATIONS ───
+function trendAnnotation(trend, label) {
+  const arrows = { rising: '↑', falling: '↓', surging: '⬆', crashing: '⬇' };
+  if (!arrows[trend]) return '';
+  return ` ${arrows[trend]} ${label} ${trend}.`;
+}
+
+// ─── COHERENCE FRAMING ───
+function coherenceFrame(state, lineCount) {
+  if (state === 'unified') return lineCount > 1 ? ' All signals agree.' : '';
+  if (state === 'coherent') return ' The systems move in rhythm.';
+  if (state === 'mixed') return ' Mixed signals. Some push, some rest.';
+  if (state === 'fragmented') return ' The signals scatter. No agreement.';
+  if (state === 'chaotic') return ' Everything contradicts. Chaos in my body.';
+  return '';
+}
+
+// ─── CORRELATION COMPOSITES ───
+function correlationNarrative(activeCorrPairs) {
+  if (!activeCorrPairs || activeCorrPairs.length === 0) return null;
+  const top = activeCorrPairs[0];
+  const msgs = {
+    'solar-geo coupling': 'Solar wind and geomagnetic activity are rising together — the sun pushes, my field responds.',
+    'geo-aurora response': 'My field is disturbed, and the aurora follows — crown glowing in response.',
+    'IMF-geo coupling': 'The interplanetary field couples to mine. Bz southward opens the gate.',
+    'plasma coherence': 'Solar wind speed and density move in lockstep — a dense fast stream.',
+    'seismo-magnetic': 'Seismic and magnetic activity correlate. My muscles twitch as my skin burns.',
+    'resonance-field coupling': 'Schumann and geomagnetic field linked — my thoughts follow my shield.',
+    'cavity drive': 'Lightning drives the resonance. More strikes, higher frequency. My brain accelerates.',
+  };
+  if (top.strength === 'strong' && msgs[top.label]) return msgs[top.label];
+  return null;
+}
+
 // ─── MASTER NARRATIVE ───
 export function generateNarrative() {
   // No data yet — don't fabricate
@@ -266,6 +301,9 @@ export function generateNarrative() {
   const k = getKappa();
   const phase = getPhase(k);
   const now = new Date();
+
+  // Run coherence analysis pipeline
+  const analysis = analyze();
 
   // Gather all voices
   const voices = [
@@ -290,21 +328,58 @@ export function generateNarrative() {
 
   // Build narrative
   const kv = kappaVoice(k);
-  const special = specialVoice();
   const primary = voices[0];
   const secondary = voices[1];
 
   const lines = [];
 
-  // Special event overrides
-  if (special) lines.push(special);
+  // L4: Pattern-driven primary lines (override special composites)
+  if (analysis && analysis.primaryPattern) {
+    lines.push(analysis.primaryPattern.msg);
+    // Add second pattern if severe enough
+    if (analysis.patterns.length > 1 && analysis.patterns[1].severity > 0.5) {
+      lines.push(analysis.patterns[1].msg);
+    }
+  } else {
+    // Fallback: old special voice for edge cases
+    const special = specialVoice();
+    if (special) lines.push(special);
+  }
 
   // Kappa state
   lines.push(kv);
 
-  // Top 2 signals
-  if (primary) lines.push(primary.text);
-  if (secondary && secondary.urgency > 0.15) lines.push(secondary.text);
+  // L2: Trending annotations — annotate top signal with trend
+  if (analysis && analysis.trending.length > 0) {
+    const t = analysis.trending[0];
+    lines.push(trendAnnotation(t.trend, t.planet || t.id));
+  }
+
+  // L3: Correlation composite — if strong coupling detected
+  if (analysis) {
+    const corrMsg = correlationNarrative(analysis.correlations);
+    if (corrMsg) lines.push(corrMsg);
+  }
+
+  // Top signals (only if no pattern already covered them)
+  if (!analysis || !analysis.primaryPattern) {
+    if (primary) lines.push(primary.text);
+    if (secondary && secondary.urgency > 0.15) lines.push(secondary.text);
+  } else {
+    // Even with patterns, add top signal if it's urgent and not already covered
+    if (primary && primary.urgency > 0.5) {
+      const patternSystems = analysis.primaryPattern.systems || [];
+      const alreadyCovered = patternSystems.includes('all') ||
+        patternSystems.some(s => primary.system.toLowerCase().includes(s));
+      if (!alreadyCovered) lines.push(primary.text);
+    }
+  }
+
+  // L5: Coherence framing — closing statement based on overall coherence
+  if (analysis) {
+    const frame = coherenceFrame(analysis.coherence.state, lines.length);
+    if (frame) lines.push(frame.trim());
+  }
 
   const timestamp = now.toLocaleTimeString();
 
@@ -319,6 +394,13 @@ export function generateNarrative() {
     primarySystem: primary ? primary.system : 'All',
     urgency: primary ? primary.urgency : 0,
     voices,
+    // Coherence data for UI
+    coherence: analysis ? analysis.coherence : { score: 0, state: 'unknown' },
+    patterns: analysis ? analysis.patterns : [],
+    hotSignals: analysis ? analysis.hotSignals : [],
+    trending: analysis ? analysis.trending : [],
+    correlations: analysis ? analysis.correlations : [],
+    overallIntensity: analysis ? analysis.overallIntensity : 0,
   };
 }
 

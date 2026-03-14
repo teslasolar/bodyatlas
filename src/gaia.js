@@ -18,6 +18,7 @@ import {
   generateNarrative, logUtterance,
   getUtteranceLog, moodColor,
 } from './voice.js';
+import { trendLabel, trendColor } from './coherence.js';
 
 // ─── GAIA LAYER MAPPING (compressed from std/layers.md) ───
 const GL = [
@@ -607,7 +608,64 @@ function updateVoice() {
   logList.innerHTML = log.slice(0, 8).map(u =>
     `<div class="voice-log-item"><span class="vl-time">${u.time}</span> <span style="color:${moodColor(u.mood)}">${u.text.substring(0,60)}${u.text.length>60?'...':''}</span></div>`
   ).join('');
+
+  // Update coherence UI
+  updateCoherenceUI(narrative);
 }
+
+function updateCoherenceUI(narrative) {
+  const coh = narrative.coherence || { score: 0, state: 'unknown' };
+  const cohColors = { unified: '#0f0', coherent: '#4c6', mixed: '#aa0', fragmented: '#f80', chaotic: '#f44', unknown: '#333' };
+  const cohColor = cohColors[coh.state] || '#333';
+
+  // Meter
+  const cohFill = document.getElementById('coh-fill');
+  const cohScore = document.getElementById('coh-score');
+  const cohState = document.getElementById('coh-state');
+  if (cohFill) { cohFill.style.width = `${coh.score * 100}%`; cohFill.style.background = cohColor; }
+  if (cohScore) { cohScore.textContent = coh.score.toFixed(2); cohScore.style.color = cohColor; }
+  if (cohState) { cohState.textContent = coh.state.toUpperCase(); cohState.style.color = cohColor; }
+
+  // Patterns
+  const patternList = document.getElementById('pattern-list');
+  if (patternList) {
+    const patterns = narrative.patterns || [];
+    patternList.innerHTML = patterns.length === 0
+      ? '<div style="font-size:7px;color:#222;">none detected</div>'
+      : patterns.slice(0, 4).map(p =>
+          `<div class="coh-pattern" style="border-color:${cohColor}"><span class="cp-name">${p.name}</span><span class="cp-sev">${(p.severity * 100).toFixed(0)}%</span></div>`
+        ).join('');
+  }
+
+  // Hot signals
+  const hotList = document.getElementById('hot-list');
+  if (hotList) {
+    const hot = narrative.hotSignals || [];
+    hotList.innerHTML = hot.length === 0
+      ? '<div style="font-size:7px;color:#222;">all quiet</div>'
+      : hot.slice(0, 6).map(s => {
+          const pct = (s.intensity * 100).toFixed(0);
+          const tc = trendColor(s.trend);
+          return `<div class="coh-signal">
+            <span class="cs-trend" style="color:${tc}">${trendLabel(s.trend)}</span>
+            <span class="cs-name">${s.planet || s.id}</span>
+            <div class="cs-bar"><div class="cs-fill" style="width:${pct}%;background:${tc}"></div></div>
+            <span class="cs-val">${pct}%</span>
+          </div>`;
+        }).join('');
+  }
+
+  // Correlations
+  const corrList = document.getElementById('corr-list');
+  if (corrList) {
+    const corr = narrative.correlations || [];
+    corrList.innerHTML = corr.length === 0
+      ? '<div style="font-size:7px;color:#222;">none active</div>'
+      : corr.slice(0, 5).map(c => {
+          const strColor = c.strength === 'strong' ? '#0f0' : '#aa0';
+          return `<div class="coh-corr-item"><span>${c.label}</span><span class="cc-strength" style="color:${strColor}">${c.strength}</span></div>`;
+        }).join('');
+  }
 
 // ─── CHECK FOR NEW EVENTS ───
 let lastEqId = null;

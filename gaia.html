@@ -140,6 +140,29 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000008; c
 .voice-log-item { font-size: 7px; color: #444; padding: 2px 0; border-bottom: 1px solid #0a0a0f; }
 .voice-log-item .vl-time { color: #333; }
 
+/* Coherence panel */
+.coh-pattern {
+  font-size: 8px; padding: 3px 6px; margin-bottom: 3px;
+  border-left: 2px solid #0f0; border-radius: 2px;
+  background: rgba(0,255,0,0.03);
+}
+.coh-pattern .cp-name { color: #aaa; font-weight: 600; }
+.coh-pattern .cp-sev { color: #555; font-size: 7px; float: right; }
+.coh-signal {
+  font-size: 8px; padding: 2px 6px; margin-bottom: 2px;
+  display: flex; align-items: center; gap: 6px;
+}
+.coh-signal .cs-bar { width: 40px; height: 3px; background: #111; border-radius: 1px; overflow: hidden; }
+.coh-signal .cs-fill { height: 100%; transition: width 0.3s; }
+.coh-signal .cs-name { color: #666; flex: 1; }
+.coh-signal .cs-val { color: #888; min-width: 28px; text-align: right; }
+.coh-signal .cs-trend { min-width: 12px; text-align: center; }
+.coh-corr-item {
+  font-size: 7px; padding: 2px 6px; margin-bottom: 2px;
+  color: #555; display: flex; justify-content: space-between;
+}
+.coh-corr-item .cc-strength { font-weight: 600; }
+
 /* Events log */
 #events-log { margin-top: 12px; }
 #events-log h3 { font-size: 7px; color: #444; letter-spacing: 2px; margin-bottom: 6px; }
@@ -249,6 +272,28 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000008; c
     <div id="voice-log" style="margin-bottom:12px;">
       <div style="font-size:7px;color:#333;letter-spacing:2px;margin-bottom:4px;">▸ VOICE LOG</div>
       <div id="voice-log-list"></div>
+    </div>
+    <div id="coherence-panel" style="margin-bottom:12px;">
+      <div style="font-size:7px;color:#444;letter-spacing:2px;margin-bottom:6px;">▸ COHERENCE</div>
+      <div id="coh-meter" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="flex:1;height:4px;background:#111;border-radius:2px;overflow:hidden;">
+          <div id="coh-fill" style="height:100%;width:50%;background:#0f0;transition:width 0.5s,background 0.5s;"></div>
+        </div>
+        <span id="coh-score" style="font-size:10px;color:#0f0;min-width:32px;">0.50</span>
+      </div>
+      <div id="coh-state" style="font-size:8px;color:#555;margin-bottom:8px;">COHERENT</div>
+      <div id="coh-patterns" style="margin-bottom:8px;">
+        <div style="font-size:7px;color:#333;letter-spacing:1px;margin-bottom:3px;">ACTIVE PATTERNS</div>
+        <div id="pattern-list"></div>
+      </div>
+      <div id="coh-hot" style="margin-bottom:8px;">
+        <div style="font-size:7px;color:#333;letter-spacing:1px;margin-bottom:3px;">HOT SIGNALS</div>
+        <div id="hot-list"></div>
+      </div>
+      <div id="coh-corr">
+        <div style="font-size:7px;color:#333;letter-spacing:1px;margin-bottom:3px;">CORRELATIONS</div>
+        <div id="corr-list"></div>
+      </div>
     </div>
     <div id="info-panel">
       <div class="info-section">
